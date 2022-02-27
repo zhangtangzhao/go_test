@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpserver
+  labels:
+    app: httpserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: httpserver
+  template:
+    metadata:
+      labels:
+        app: httpserver
+    spec:
+      imagePullSecrets:
+        - name: cloudnative
+      containers:
+        - name: httpserver
+          image: zhangtangzhao/httpserver:1.0
+          env:
+          # 定义环境变量
+            - name: PLAYER_INITIAL_LIVES
+            # 请注意这里和 ConfigMap 中的键名是不一样的
+              valueFrom:
+                configMapKeyRef:
+                  name: httpserver
+                  # 这个值来自 ConfigMap
+                  key: player_initial_lives
+                  # 需要取值的键
+            - name: UI_PROPERTIES_FILE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: httpserver
+                  key: ui_properties_file_name
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 3
+          resources:
+            limits:
+              memory: "200Mi"
+            requests:
+              memory: "100Mi"
+      volumes:
+      # 你可以在 Pod 级别设置卷，然后将其挂载到 Pod 内的容器中
+        - name: config
+          configMap:
+        # 提供你想要挂载的 ConfigMap 的名字
+            name: httpserver
